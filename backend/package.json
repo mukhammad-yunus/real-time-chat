@@ -1,0 +1,16 @@
+{
+  "name": "real-time-chat-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Express, Prisma, and Socket.IO backend for Real-Time-Chat.",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT"
+}
