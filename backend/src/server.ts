@@ -1,7 +1,8 @@
 import http from 'node:http'
 import { app } from './app'
+import { env } from './config/env';
 
-const PORT = 4000;
+const {PORT} = env;
 const server = http.createServer(app)
 
 server.listen(PORT, ()=>{
