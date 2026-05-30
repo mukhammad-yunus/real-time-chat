@@ -12,3 +12,17 @@ export async function registerController(req: Request, res: Response) {
     }
   });
 }
+
+import { loginUser } from "../services/auth.service.js";
+
+export async function loginController(req: Request, res: Response) {
+  const result = await loginUser(req.body, getRequestInfo(req));
+
+  res.json({
+    ok: true,
+    data: {
+      user: result.user,
+      token: result.token
+    }
+  });
+}

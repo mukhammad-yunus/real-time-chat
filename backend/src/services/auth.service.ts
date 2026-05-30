@@ -5,6 +5,7 @@ import { prisma } from "../config/prisma.js";
 import { ApiError } from "../errors/api-error.js";
 import type { LoginInput, RegisterInput } from "../schemas/auth.schemas.js";
 import { createAuditLog } from "./audit.service.js";
+import jwt, { SignOptions } from "jsonwebtoken";
 
 type RequestMeta = {
   ipAddress?: string | null;
@@ -45,4 +46,61 @@ export async function registerUser(input: RegisterInput, meta: RequestMeta) {
 
     throw error;
   }
+}
+
+
+export type AuthTokenPayload = {
+  userId: string;
+};
+
+export function signAuthToken(payload: AuthTokenPayload) {
+  return jwt.sign(payload, env.JWT_SECRET, {
+    expiresIn: env.JWT_EXPIRES_IN as SignOptions['expiresIn']
+  });
+}
+
+export async function loginUser(input: LoginInput, meta: RequestMeta) {
+  const identifier = input.identifier.toLowerCase();
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [{ username: identifier }, { email: identifier }]
+    }
+  });
+
+  if (!user) {
+    await createAuditLog({
+      action: AuditAction.LOGIN_FAILED,
+      ...meta
+    });
+    throw new ApiError(401, "INVALID_CREDENTIALS", "Invalid username, email, or password");
+  }
+
+  const passwordMatches = await bcrypt.compare(input.password, user.passwordHash);
+
+  if (!passwordMatches) {
+    await createAuditLog({
+      action: AuditAction.LOGIN_FAILED,
+      userId: user.id,
+      ...meta
+    });
+    throw new ApiError(401, "INVALID_CREDENTIALS", "Invalid username, email, or password");
+  }
+
+  await createAuditLog({
+    action: AuditAction.LOGIN_SUCCESS,
+    userId: user.id,
+    ...meta
+  });
+
+  const token = signAuthToken({ userId: user.id });
+
+  return {
+    token,
+    user: {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      createdAt: user.createdAt
+    }
+  };
 }
