@@ -14,15 +14,16 @@ export async function registerController(req: Request, res: Response) {
 }
 
 import { loginUser } from "../services/auth.service.js";
+import { setAuthCookie } from "../utils/auth-cookie.js";
 
 export async function loginController(req: Request, res: Response) {
   const result = await loginUser(req.body, getRequestInfo(req));
-
+  setAuthCookie(res, result.token);
+  
   res.json({
     ok: true,
     data: {
       user: result.user,
-      token: result.token
     }
   });
 }
