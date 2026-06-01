@@ -1,3 +1,4 @@
+import cookieParser from "cookie-parser";
 import express from "express";
 import morgan from "morgan";
 import { env } from "./config/env.js";
@@ -11,6 +12,7 @@ if (env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
+app.use(cookieParser());
 app.use(express.json({ limit: "32kb" }));
 
 app.get("/", (_req, res) => {
