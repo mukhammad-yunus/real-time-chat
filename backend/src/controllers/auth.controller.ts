@@ -46,3 +46,12 @@ export async function logoutController(req: Request, res: Response) {
     }
   });
 }
+
+export async function meController(req: Request, res: Response) {
+  res.json({
+    ok: true,
+    data: {
+      user: req.user
+    }
+  });
+}
