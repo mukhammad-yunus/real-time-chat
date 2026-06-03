@@ -40,9 +40,6 @@ export function validate(schemas: RequestSchemas) {
         queryResult.error.issues[0]?.message ?? "Invalid query string",
       );
     }
-    if (queryResult?.success) {
-      (req.query as any) = queryResult.data;
-    }
 
     next();
   };
