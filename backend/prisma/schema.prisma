@@ -25,6 +25,7 @@ model User {
 
 model Conversation {
   id        String   @id @default(cuid())
+  pairKey   String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
