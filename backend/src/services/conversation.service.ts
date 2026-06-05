@@ -65,3 +65,38 @@ export async function createPrivateConversation(
     return conversation;
   });
 }
+
+export async function listConversations(userId: string) {
+  return prisma.conversation.findMany({
+    where: {
+      participants: {
+        some: { userId }
+      }
+    },
+    include: {
+      participants: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              isOnline: true,
+              lastSeenAt: true
+            }
+          }
+        }
+      },
+      messages: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          senderId: true
+        }
+      }
+    },
+    orderBy: { updatedAt: "desc" }
+  });
+}
