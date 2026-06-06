@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import {
+  createMessage,
   createPrivateConversation,
   listConversations
 } from "../services/conversation.service.js";
@@ -19,5 +20,14 @@ export async function createConversationController(req: Request, res: Response) 
   res.status(201).json({
     ok: true,
     data: { conversation }
+  });
+}
+
+export async function sendMessageController(req: Request, res: Response) {
+  const message = await createMessage(req.user!.id, req.params.conversationId as string, req.body.content);
+
+  res.status(201).json({
+    ok: true,
+    data: { message }
   });
 }

@@ -100,3 +100,24 @@ export async function listConversations(userId: string) {
     orderBy: { updatedAt: "desc" }
   });
 }
+
+export async function createMessage(userId: string, conversationId: string, content: string) {
+  await assertConversationParticipant(userId, conversationId);
+
+  return prisma.message.create({
+    data: {
+      conversationId,
+      senderId: userId,
+      content
+    },
+    include: {
+      sender: {
+        select: {
+          id: true,
+          username: true
+        }
+      },
+      reads: true
+    }
+  });
+}
