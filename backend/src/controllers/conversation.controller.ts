@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import {
   createMessage,
   createPrivateConversation,
+  getMessageHistory,
   listConversations
 } from "../services/conversation.service.js";
 
@@ -29,5 +30,19 @@ export async function sendMessageController(req: Request, res: Response) {
   res.status(201).json({
     ok: true,
     data: { message }
+  });
+}
+
+export async function messageHistoryController(req: Request, res: Response) {
+  const result = await getMessageHistory(
+    req.user!.id,
+    req.params.conversationId as string,
+    req.query.cursor ? String(req.query.cursor) : undefined,
+    Number(req.query.limit)
+  );
+
+  res.json({
+    ok: true,
+    data: result
   });
 }

@@ -121,3 +121,37 @@ export async function createMessage(userId: string, conversationId: string, cont
     }
   });
 }
+
+export async function getMessageHistory(userId: string, conversationId: string, cursor?: string, limit = 30) {
+  await assertConversationParticipant(userId, conversationId);
+
+  const messages = await prisma.message.findMany({
+    where: { conversationId },
+    orderBy: { createdAt: "desc" },
+    take: limit + 1,
+    ...(cursor
+      ? {
+          cursor: { id: cursor },
+          skip: 1
+        }
+      : {}),
+    include: {
+      sender: {
+        select: {
+          id: true,
+          username: true
+        }
+      },
+      reads: true
+    }
+  });
+
+  const hasMore = messages.length > limit;
+  const page = hasMore ? messages.slice(0, limit) : messages;
+  const nextCursor = hasMore ? page[page.length - 1]?.id : null;
+
+  return {
+    messages: page.reverse(),
+    nextCursor
+  };
+}

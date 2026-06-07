@@ -2,11 +2,12 @@ import { Router } from "express";
 import {
   createConversationController,
   listConversationsController,
+  messageHistoryController,
   sendMessageController
 } from "../controllers/conversation.controller.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { validate } from "../middleware/validate.js";
-import { conversationParamsSchema, createConversationSchema, sendMessageSchema } from "../schemas/conversation.schemas.js";
+import { conversationParamsSchema, createConversationSchema, messageHistoryQuerySchema, sendMessageSchema } from "../schemas/conversation.schemas.js";
 import { asyncHandler } from "../utils/async-handler.js";
 
 export const conversationRouter = Router();
@@ -18,4 +19,9 @@ conversationRouter.post(
   "/:conversationId/messages",
   validate({ params: conversationParamsSchema, body: sendMessageSchema }),
   asyncHandler(sendMessageController)
+);
+conversationRouter.get(
+  "/:conversationId/messages",
+  validate({ params: conversationParamsSchema, query: messageHistoryQuerySchema }),
+  asyncHandler(messageHistoryController)
 );
