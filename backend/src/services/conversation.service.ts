@@ -155,3 +155,28 @@ export async function getMessageHistory(userId: string, conversationId: string, 
     nextCursor
   };
 }
+
+export async function markConversationRead(userId: string, conversationId: string) {
+  await assertConversationParticipant(userId, conversationId);
+
+  const unreadMessages = await prisma.message.findMany({
+    where: {
+      conversationId,
+      senderId: { not: userId },
+      reads: {
+        none: { userId }
+      }
+    },
+    select: { id: true }
+  });
+
+  await prisma.messageRead.createMany({
+    data: unreadMessages.map((message) => ({
+      messageId: message.id,
+      userId
+    })),
+    skipDuplicates: true
+  });
+
+  return unreadMessages.map((message) => message.id);
+}
