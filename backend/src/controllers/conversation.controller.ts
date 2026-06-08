@@ -38,7 +38,7 @@ export async function messageHistoryController(req: Request, res: Response) {
     req.user!.id,
     req.params.conversationId as string,
     req.query.cursor ? String(req.query.cursor) : undefined,
-    Number(req.query.limit)
+    !Number.isNaN(Number(req.query.limit))? Number(req.query.limit): undefined
   );
 
   res.json({
