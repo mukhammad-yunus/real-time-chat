@@ -7,6 +7,7 @@ import { healthRouter } from "./routes/health.routes.js";
 import { authRouter } from "./routes/auth.routes.js";
 import { userRouter } from "./routes/user.routes.js";
 import { conversationRouter } from "./routes/conversation.routes.js";
+import helmet from "helmet";
 
 export const app = express();
 
@@ -14,6 +15,7 @@ if (env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
+app.use(helmet());
 app.use(cookieParser());
 app.use(express.json({ limit: "32kb" }));
 
