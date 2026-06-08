@@ -8,6 +8,7 @@ import { authRouter } from "./routes/auth.routes.js";
 import { userRouter } from "./routes/user.routes.js";
 import { conversationRouter } from "./routes/conversation.routes.js";
 import helmet from "helmet";
+import cors from 'cors'
 
 export const app = express();
 
@@ -16,6 +17,12 @@ if (env.NODE_ENV === "development") {
 }
 
 app.use(helmet());
+app.use(
+  cors({
+    origin: env.FRONTEND_ORIGIN,
+    credentials: true
+  })
+);
 app.use(cookieParser());
 app.use(express.json({ limit: "32kb" }));
 
