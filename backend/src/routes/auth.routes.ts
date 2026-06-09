@@ -9,6 +9,6 @@ import { authRateLimiter } from "../middleware/rate-limiters.js";
 export const authRouter = Router();
 
 authRouter.post("/register", authRateLimiter, validate({ body: registerSchema }), asyncHandler(registerController));
-authRouter.post("/login", validate({ body: loginSchema }), asyncHandler(loginController));
+authRouter.post("/login",authRateLimiter, validate({ body: loginSchema }), asyncHandler(loginController));
 authRouter.post("/logout", asyncHandler(logoutController));
 authRouter.get("/me", authenticate, asyncHandler(meController));
