@@ -2,9 +2,13 @@ import http from "node:http";
 import { app } from "./app.js";
 import { env } from "./config/env.js";
 import { prisma } from "./config/prisma.js";
+import { createSocketServer } from "./socket/socket-server.js";
 
 const { PORT } = env;
 const server = http.createServer(app);
+const io = createSocketServer(server);
+
+void io
 
 server.listen(PORT, () => {
   console.log(`Backend listening on http://localhost:${PORT}`);
