@@ -51,6 +51,19 @@ export function registerSocketHandlers(io: Server) {
             socketEvents.messageNew,
             { message },
           );
+
+          const deliveredAt = new Date();
+          await prisma.message.update({
+            where: { id: message.id },
+            data: { deliveredAt },
+          });
+          io.to(conversationRoom(conversationId)).emit(
+            socketEvents.messageDelivered,
+            {
+              messageId: message.id,
+              deliveredAt,
+            },
+          );
         } catch {
           socket.emit(socketEvents.socketError, {
             message: "Message could not be sent",
