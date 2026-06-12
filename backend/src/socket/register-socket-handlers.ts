@@ -84,6 +84,32 @@ export function registerSocketHandlers(io: Server) {
         socket.emit(socketEvents.socketError, { message: "Messages could not be marked read" });
       }
     });
+
+    socket.on(socketEvents.typingStart, async ({ conversationId }: { conversationId: string }) => {
+      try {
+        await assertConversationParticipant(user.id, conversationId);
+        socket.to(conversationRoom(conversationId)).emit(socketEvents.typingStart, {
+          conversationId,
+          userId: user.id,
+          username: user.username
+        });
+      } catch {
+        socket.emit(socketEvents.socketError, { message: "Typing event rejected" });
+      }
+    });
+
+    socket.on(socketEvents.typingStop, async ({ conversationId }: { conversationId: string }) => {
+      try {
+        await assertConversationParticipant(user.id, conversationId);
+        socket.to(conversationRoom(conversationId)).emit(socketEvents.typingStop, {
+          conversationId,
+          userId: user.id
+        });
+      } catch {
+        socket.emit(socketEvents.socketError, { message: "Typing event rejected" });
+      }
+    });
+    
     socket.on(socketEvents.disconnect, async () => {
       const remaining = removeUserSocket(user.id, socket.id);
       if (remaining === 0) {
