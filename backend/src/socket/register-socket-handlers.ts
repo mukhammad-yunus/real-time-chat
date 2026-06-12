@@ -1,7 +1,10 @@
 import type { Server, Socket } from "socket.io";
 import { prisma } from "../config/prisma.js";
 import { assertConversationParticipant } from "../services/authorization.service.js";
-import { createMessage, markConversationRead } from "../services/conversation.service.js";
+import {
+  createMessage,
+  markConversationRead,
+} from "../services/conversation.service.js";
 import { socketEvents } from "./socket-events.js";
 import { addUserSocket, removeUserSocket } from "./presence-store.js";
 import { conversationRoom, userRoom } from "./rooms.js";
@@ -15,20 +18,46 @@ export function registerSocketHandlers(io: Server) {
     if (socketCount === 1) {
       await prisma.user.update({
         where: { id: user.id },
-        data: { isOnline: true }
+        data: { isOnline: true },
       });
       io.emit(socketEvents.presenceOnline, { userId: user.id });
     }
 
-    socket.on(socketEvents.conversationJoin, async ({ conversationId }: { conversationId: string }) => {
-      try {
-        await assertConversationParticipant(user.id, conversationId);
-        socket.join(conversationRoom(conversationId));
-      } catch {
-        socket.emit(socketEvents.socketError, { message: "Cannot join conversation" });
-      }
-    });
-
+    socket.on(
+      socketEvents.conversationJoin,
+      async ({ conversationId }: { conversationId: string }) => {
+        try {
+          await assertConversationParticipant(user.id, conversationId);
+          socket.join(conversationRoom(conversationId));
+        } catch {
+          socket.emit(socketEvents.socketError, {
+            message: "Cannot join conversation",
+          });
+        }
+      },
+    );
+    socket.on(
+      socketEvents.messageSend,
+      async ({
+        conversationId,
+        content,
+      }: {
+        conversationId: string;
+        content: string;
+      }) => {
+        try {
+          const message = await createMessage(user.id, conversationId, content);
+          io.to(conversationRoom(conversationId)).emit(
+            socketEvents.messageNew,
+            { message },
+          );
+        } catch {
+          socket.emit(socketEvents.socketError, {
+            message: "Message could not be sent",
+          });
+        }
+      },
+    );
     socket.on(socketEvents.disconnect, async () => {
       const remaining = removeUserSocket(user.id, socket.id);
       if (remaining === 0) {
@@ -37,8 +66,8 @@ export function registerSocketHandlers(io: Server) {
           where: { id: user.id },
           data: {
             isOnline: false,
-            lastSeenAt
-          }
+            lastSeenAt,
+          },
         });
         io.emit(socketEvents.presenceOffline, { userId: user.id, lastSeenAt });
       }
