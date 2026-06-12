@@ -71,6 +71,19 @@ export function registerSocketHandlers(io: Server) {
         }
       },
     );
+    socket.on(socketEvents.messageRead, async ({ conversationId }: { conversationId: string }) => {
+      try {
+        const messageIds = await markConversationRead(user.id, conversationId);
+        io.to(conversationRoom(conversationId)).emit(socketEvents.messageRead, {
+          conversationId,
+          userId: user.id,
+          messageIds,
+          readAt: new Date()
+        });
+      } catch {
+        socket.emit(socketEvents.socketError, { message: "Messages could not be marked read" });
+      }
+    });
     socket.on(socketEvents.disconnect, async () => {
       const remaining = removeUserSocket(user.id, socket.id);
       if (remaining === 0) {
