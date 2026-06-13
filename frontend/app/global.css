@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink-950: #14201d;
+  --color-ink-700: #3e514b;
+  --color-mist-50: #f5f8f6;
+  --color-mist-100: #e8efeb;
+  --color-mint-500: #25a67a;
+  --color-mint-600: #178764;
+  --color-coral-500: #f1715c;
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-newsreader);
+}
+
+:root {
+  color-scheme: light;
+}
+
+* {
+  border-color: color-mix(in oklab, var(--color-ink-950) 12%, transparent);
+}
+
+html {
+  background: var(--color-mist-50);
+}
+
+body {
+  min-height: 100vh;
+  color: var(--color-ink-950);
+  background:
+    radial-gradient(circle at 10% 0%, rgb(37 166 122 / 10%), transparent 32rem),
+    var(--color-mist-50);
+}
+
+button,
+a,
+input,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 3px solid color-mix(in oklab, var(--color-mint-500) 70%, white);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
