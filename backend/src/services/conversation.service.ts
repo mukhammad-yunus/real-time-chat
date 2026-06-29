@@ -1,10 +1,36 @@
 import { prisma } from "../config/prisma.js";
 import { ApiError } from "../errors/api-error.js";
 import { assertConversationParticipant } from "./authorization.service.js";
+import { Prisma } from "../generated/prisma/client.js";
 
 function getPairKey(userAId: string, userBId: string) {
   return [userAId, userBId].sort().join(":");
 }
+
+const conversationInclude = {
+  participants: {
+    include: {
+      user: {
+        select: {
+          id: true,
+          username: true,
+          isOnline: true,
+          lastSeenAt: true,
+        },
+      },
+    },
+  },
+  messages: {
+    orderBy: { createdAt: "desc" },
+    take: 1,
+    select: {
+      id: true,
+      content: true,
+      createdAt: true,
+      senderId: true,
+    },
+  },
+} satisfies Prisma.ConversationInclude;
 
 export async function createPrivateConversation(
   currentUserId: string,
@@ -31,39 +57,34 @@ export async function createPrivateConversation(
 
   const existing = await prisma.conversation.findUnique({
     where: { pairKey },
-    include: {
-      participants: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-              isOnline: true,
-              lastSeenAt: true,
-            },
-          },
-        },
-      },
-    },
+    include: conversationInclude,
   });
 
-  if (existing && existing.participants.length === 2) {
+  if (existing) {
     return existing;
   }
 
-  return prisma.$transaction(async (tx) => {
-    const conversation = await tx.conversation.create({
+  try {
+    return await prisma.conversation.create({
       data: {
         pairKey,
         participants: {
           create: [{ userId: currentUserId }, { userId: participantId }],
         },
       },
+      include: conversationInclude,
     });
-
-    void pairKey;
-    return conversation;
-  });
+  } catch (error) {
+    // The unique key makes concurrent creates converge on the same conversation.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      const conversation = await prisma.conversation.findUnique({
+        where: { pairKey },
+        include: conversationInclude,
+      });
+      if (conversation) return conversation;
+    }
+    throw error;
+  }
 }
 
 export async function listConversations(userId: string) {
@@ -73,30 +94,7 @@ export async function listConversations(userId: string) {
         some: { userId }
       }
     },
-    include: {
-      participants: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-              isOnline: true,
-              lastSeenAt: true
-            }
-          }
-        }
-      },
-      messages: {
-        orderBy: { createdAt: "desc" },
-        take: 1,
-        select: {
-          id: true,
-          content: true,
-          createdAt: true,
-          senderId: true
-        }
-      }
-    },
+    include: conversationInclude,
     orderBy: { updatedAt: "desc" }
   });
 }
