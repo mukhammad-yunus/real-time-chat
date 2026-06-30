@@ -1,7 +1,7 @@
 import type { Message } from "@/types/api";
 
 export interface ServerToClientEvents {
-  "message:new": (payload: { message: Message }) => void;
+  "message:new": (payload: { message: Message; clientMessageId?: string }) => void;
   "message:delivered": (payload: {
     messageId: string;
     deliveredAt: string;
@@ -28,6 +28,7 @@ export interface ClientToServerEvents {
   "message:send": (payload: {
     conversationId: string;
     content: string;
+    clientMessageId: string;
   }) => void;
   "message:read": (payload: { conversationId: string }) => void;
   "typing:start": (payload: { conversationId: string }) => void;

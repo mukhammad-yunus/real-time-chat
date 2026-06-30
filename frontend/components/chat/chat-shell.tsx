@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createChatSocket, type ChatSocket } from "@/lib/socket";
 import { chatReducer } from "@/lib/chat-state";
@@ -23,7 +23,7 @@ export function ChatShell({
   initialPage,
 }: Props) {
   const router = useRouter();
-  const socketRef = useRef<ChatSocket | null>(null);
+  const [socket] = useState<ChatSocket>(createChatSocket);
   const activeConversationIdRef = useRef(activeConversationId);
   const [state, dispatch] = useReducer(chatReducer, {
     conversations: initialConversations,
@@ -31,9 +31,6 @@ export function ChatShell({
     nextCursor: initialPage?.nextCursor ?? null,
     typingUsers: {},
   });
-
-  if (!socketRef.current) socketRef.current = createChatSocket();
-  const socket = socketRef.current;
 
   useEffect(() => {
     activeConversationIdRef.current = activeConversationId;
@@ -52,9 +49,9 @@ export function ChatShell({
       socket.emit("message:read", { conversationId });
     }
 
-    socket.on("message:new", ({ message }) => {
+    socket.on("message:new", ({ message, clientMessageId }) => {
       if (message.conversationId === activeConversationIdRef.current) {
-        dispatch({ type: "messageReceived", message });
+        dispatch({ type: "messageReceived", message, clientMessageId });
         if (
           message.senderId !== currentUser.id &&
           document.visibilityState === "visible"
@@ -76,7 +73,7 @@ export function ChatShell({
       dispatch({
         type: "read",
         messageIds,
-        read: { id: `${userId}-${readAt}`, userId, messageId: "", readAt },
+        read: { userId, readAt },
       });
     });
 

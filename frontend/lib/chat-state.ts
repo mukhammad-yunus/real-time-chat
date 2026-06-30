@@ -21,18 +21,28 @@ export type ChatState = {
 
 export type ChatAction =
   | { type: "olderLoaded"; messages: Message[]; nextCursor: string | null }
-  | { type: "messageReceived"; message: Message }
+  | { type: "messageReceived"; message: Message; clientMessageId?: string }
   | { type: "messageQueued"; message: PendingMessage }
   | { type: "messageFailed"; clientId: string }
   | { type: "delivered"; messageId: string; deliveredAt: string }
-  | { type: "read"; messageIds: string[]; read: MessageRead }
+  | {
+      type: "read";
+      messageIds: string[];
+      read: Pick<MessageRead, "userId" | "readAt">;
+    }
   | { type: "presence"; userId: string; isOnline: boolean; lastSeenAt?: string }
   | { type: "typing"; conversationId: string; username?: string }
   | { type: "conversationAdded"; conversation: Conversation };
 
-function upsertMessage(messages: DisplayMessage[], incoming: Message) {
+function upsertMessage(
+  messages: DisplayMessage[],
+  incoming: Message,
+  clientMessageId?: string,
+) {
   const withoutServerDuplicate = messages.filter(
-    (item) => item.id !== incoming.id,
+    (item) =>
+      item.id !== incoming.id &&
+      !("clientId" in item && item.clientId === clientMessageId),
   );
   return [...withoutServerDuplicate, incoming].sort(
     (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
@@ -50,15 +60,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
     case "messageReceived":
       return {
         ...state,
-        messages: upsertMessage(
-          state.messages.filter(
-            (item) =>
-              !("clientId" in item) ||
-              item.content !== action.message.content ||
-              item.senderId !== action.message.senderId,
-          ),
-          action.message,
-        ),
+        messages: upsertMessage(state.messages, action.message, action.clientMessageId),
       };
     case "messageQueued":
       return { ...state, messages: [...state.messages, action.message] };
@@ -86,7 +88,17 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         messages: state.messages.map((item) =>
           action.messageIds.includes(item.id) &&
           !item.reads.some((read) => read.userId === action.read.userId)
-            ? { ...item, reads: [...item.reads, action.read] }
+            ? {
+                ...item,
+                reads: [
+                  ...item.reads,
+                  {
+                    id: `${item.id}-${action.read.userId}-${action.read.readAt}`,
+                    messageId: item.id,
+                    ...action.read,
+                  },
+                ],
+              }
             : item,
         ),
       };

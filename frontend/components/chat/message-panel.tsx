@@ -91,6 +91,7 @@ export function MessagePanel({
     socket.emit("message:send", {
       conversationId: conversation!.id,
       content,
+      clientMessageId: clientId,
     });
   }
 

@@ -9,6 +9,14 @@ import { socketEvents } from "./socket-events.js";
 import { addUserSocket, removeUserSocket } from "./presence-store.js";
 import { conversationRoom, userRoom } from "./rooms.js";
 
+async function conversationUserRooms(conversationId: string) {
+  const participants = await prisma.conversationParticipant.findMany({
+    where: { conversationId },
+    select: { userId: true },
+  });
+  return participants.map((participant) => userRoom(participant.userId));
+}
+
 export function registerSocketHandlers(io: Server) {
   io.on(socketEvents.connection, async (socket: Socket) => {
     const user = socket.user!;
@@ -41,23 +49,30 @@ export function registerSocketHandlers(io: Server) {
       async ({
         conversationId,
         content,
+        clientMessageId,
       }: {
         conversationId: string;
         content: string;
+        clientMessageId?: string;
       }) => {
         try {
           const message = await createMessage(user.id, conversationId, content);
-          io.to(conversationRoom(conversationId)).emit(
+          const rooms = await conversationUserRooms(conversationId);
+          socket.to(rooms).emit(
             socketEvents.messageNew,
             { message },
           );
+
+          if (clientMessageId) {
+            socket.emit(socketEvents.messageNew, { message, clientMessageId });
+          }
 
           const deliveredAt = new Date();
           await prisma.message.update({
             where: { id: message.id },
             data: { deliveredAt },
           });
-          io.to(conversationRoom(conversationId)).emit(
+          io.to(rooms).emit(
             socketEvents.messageDelivered,
             {
               messageId: message.id,
@@ -74,7 +89,8 @@ export function registerSocketHandlers(io: Server) {
     socket.on(socketEvents.messageRead, async ({ conversationId }: { conversationId: string }) => {
       try {
         const messageIds = await markConversationRead(user.id, conversationId);
-        io.to(conversationRoom(conversationId)).emit(socketEvents.messageRead, {
+        const rooms = await conversationUserRooms(conversationId);
+        io.to(rooms).emit(socketEvents.messageRead, {
           conversationId,
           userId: user.id,
           messageIds,
