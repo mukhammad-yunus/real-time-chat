@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { MessageCircle, Search } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { logoutAction } from "@/lib/actions/auth";
 import { otherParticipant } from "@/lib/chat-state";
 import { UserSearch } from "@/components/chat/user-search";

@@ -29,10 +29,7 @@ export function UserSearch({
   }, [state, onConversationAdded]);
 
   useEffect(() => {
-    if (query.trim().length < 1) {
-      setResults([]);
-      return;
-    }
+    if (query.trim().length < 1) return;
 
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
@@ -82,7 +79,7 @@ export function UserSearch({
         />
       </div>
 
-      {results.length ? (
+      {query.trim().length > 0 && results.length ? (
         <ul
           id={listId}
           className="mt-2 rounded-xl border bg-white p-1 shadow-lg"

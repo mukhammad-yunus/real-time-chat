@@ -24,25 +24,16 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function ConversationPage({ params }: PageProps) {
   const { conversationId } = await params;
+  let user;
+  let conversations;
+  let initialPage;
 
   try {
-    const [user, conversations, initialPage] = await Promise.all([
+    [user, conversations, initialPage] = await Promise.all([
       getCurrentUser(),
       getConversations(),
       getMessages(conversationId),
     ]);
-
-    if (!conversations.some((item) => item.id === conversationId)) notFound();
-
-    return (
-      <ChatShell
-        key={conversationId}
-        currentUser={user!}
-        initialConversations={conversations}
-        activeConversationId={conversationId}
-        initialPage={initialPage}
-      />
-    );
   } catch (error) {
     if (
       error instanceof ApiError &&
@@ -52,4 +43,16 @@ export default async function ConversationPage({ params }: PageProps) {
     }
     throw error;
   }
+
+  if (!user || !conversations.some((item) => item.id === conversationId)) notFound();
+
+  return (
+    <ChatShell
+      key={conversationId}
+      currentUser={user}
+      initialConversations={conversations}
+      activeConversationId={conversationId}
+      initialPage={initialPage}
+    />
+  );
 }
