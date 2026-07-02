@@ -11,6 +11,7 @@ import {
   type ChatAction,
   type DisplayMessage,
 } from "@/lib/chat-state";
+import { isUserOnline, usePresenceClock } from "@/lib/presence";
 import type { ChatSocket } from "@/lib/socket";
 import type { Conversation, MessagePage, SessionUser } from "@/types/api";
 import type { Route } from "next";
@@ -35,6 +36,7 @@ export function MessagePanel({
   dispatch,
 }: Props) {
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const now = usePresenceClock();
 
   if (!conversation) {
     return (
@@ -50,6 +52,7 @@ export function MessagePanel({
   }
 
   const other = otherParticipant(conversation, currentUser.id);
+  const online = other ? isUserOnline(other, now) : false;
 
   async function loadOlder() {
     if (!nextCursor || loadingOlder) return;
@@ -113,7 +116,7 @@ export function MessagePanel({
           <p className="text-xs text-ink-700" aria-live="polite">
             {typingUsername
               ? `${typingUsername} is typing…`
-              : other?.isOnline
+              : online
                 ? "Online"
                 : other?.lastSeenAt
                   ? `Last seen ${new Intl.DateTimeFormat(undefined, {

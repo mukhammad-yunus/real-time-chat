@@ -7,6 +7,7 @@ import {
   type CreateConversationState,
 } from "@/lib/actions/conversations";
 import { unwrap } from "@/lib/api-error";
+import { isUserOnline, usePresenceClock } from "@/lib/presence";
 import type { Conversation, PublicUser } from "@/types/api";
 
 const initialState: CreateConversationState = { status: "idle" };
@@ -19,6 +20,7 @@ export function UserSearch({
   const listId = useId();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<PublicUser[]>([]);
+  const now = usePresenceClock();
   const [state, formAction, pending] = useActionState(
     createConversationAction,
     initialState,
@@ -94,7 +96,7 @@ export function UserSearch({
                 >
                   <span className="font-semibold">@{user.username}</span>
                   <span className="text-xs text-ink-700">
-                    {user.isOnline ? "Online" : "Offline"}
+                    {isUserOnline(user, now) ? "Online" : "Offline"}
                   </span>
                 </button>
               </form>

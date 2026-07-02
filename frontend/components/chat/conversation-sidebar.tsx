@@ -4,6 +4,7 @@ import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import { logoutAction } from "@/lib/actions/auth";
 import { otherParticipant } from "@/lib/chat-state";
+import { isUserOnline, usePresenceClock } from "@/lib/presence";
 import { UserSearch } from "@/components/chat/user-search";
 import type { Conversation, SessionUser } from "@/types/api";
 import type { Route } from "next";
@@ -21,6 +22,8 @@ export function ConversationSidebar({
   activeConversationId,
   onConversationAdded,
 }: Props) {
+  const now = usePresenceClock();
+
   return (
     <aside
       className={[
@@ -53,6 +56,7 @@ export function ConversationSidebar({
           <ul className="space-y-1">
             {conversations.map((conversation) => {
               const other = otherParticipant(conversation, currentUser.id);
+              const online = other ? isUserOnline(other, now) : false;
               const latest = conversation.messages?.[0];
               const active = conversation.id === activeConversationId;
 
@@ -71,7 +75,7 @@ export function ConversationSidebar({
                       <span
                         className={[
                           "absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white",
-                          other?.isOnline ? "bg-mint-500" : "bg-slate-300",
+                          online ? "bg-mint-500" : "bg-slate-300",
                         ].join(" ")}
                         aria-hidden="true"
                       />
@@ -82,7 +86,7 @@ export function ConversationSidebar({
                           @{other?.username}
                         </span>
                         <span className="sr-only">
-                          {other?.isOnline ? "Online" : "Offline"}
+                          {online ? "Online" : "Offline"}
                         </span>
                       </span>
                       <span className="block truncate text-sm text-ink-700">
