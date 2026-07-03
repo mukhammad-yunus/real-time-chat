@@ -13,6 +13,7 @@ type Props = {
   currentUser: SessionUser;
   conversations: Conversation[];
   activeConversationId: string | null;
+  typingUsers: Record<string, string>;
   onConversationAdded: (conversation: Conversation) => void;
 };
 
@@ -20,6 +21,7 @@ export function ConversationSidebar({
   currentUser,
   conversations,
   activeConversationId,
+  typingUsers,
   onConversationAdded,
 }: Props) {
   const now = usePresenceClock();
@@ -58,6 +60,7 @@ export function ConversationSidebar({
               const other = otherParticipant(conversation, currentUser.id);
               const online = other ? isUserOnline(other, now) : false;
               const latest = conversation.messages?.[0];
+              const typingUsername = typingUsers[conversation.id];
               const active = conversation.id === activeConversationId;
 
               return (
@@ -89,8 +92,12 @@ export function ConversationSidebar({
                           {online ? "Online" : "Offline"}
                         </span>
                       </span>
-                      <span className="block truncate text-sm text-ink-700">
-                        {latest?.content ?? "Start the conversation"}
+                      <span
+                        className={`block truncate text-sm ${typingUsername ? "text-mint-700" : "text-ink-700"}`}
+                      >
+                        {typingUsername
+                          ? `@${typingUsername} is typing…`
+                          : latest?.content ?? "Start the conversation"}
                       </span>
                     </span>
                   </Link>

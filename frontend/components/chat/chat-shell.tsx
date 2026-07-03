@@ -123,6 +123,7 @@ export function ChatShell({
         currentUser={currentUser}
         conversations={state.conversations}
         activeConversationId={activeConversationId}
+        typingUsers={state.typingUsers}
         onConversationAdded={addConversation}
       />
       <MessagePanel
