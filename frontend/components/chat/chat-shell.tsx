@@ -77,10 +77,12 @@ export function ChatShell({
       });
     });
 
-    socket.on("typing:start", ({ conversationId, username }) => {
+    socket.on("typing:start", ({ conversationId, userId, username }) => {
+      if (userId === currentUser.id) return;
       dispatch({ type: "typing", conversationId, username });
     });
-    socket.on("typing:stop", ({ conversationId }) => {
+    socket.on("typing:stop", ({ conversationId, userId }) => {
+      if (userId === currentUser.id) return;
       dispatch({ type: "typing", conversationId });
     });
     socket.on("presence:online", ({ userId }) => {

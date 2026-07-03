@@ -104,7 +104,8 @@ export function registerSocketHandlers(io: Server) {
     socket.on(socketEvents.typingStart, async ({ conversationId }: { conversationId: string }) => {
       try {
         await assertConversationParticipant(user.id, conversationId);
-        socket.to(conversationRoom(conversationId)).emit(socketEvents.typingStart, {
+        const rooms = await conversationUserRooms(conversationId);
+        socket.to(rooms).emit(socketEvents.typingStart, {
           conversationId,
           userId: user.id,
           username: user.username
@@ -117,7 +118,8 @@ export function registerSocketHandlers(io: Server) {
     socket.on(socketEvents.typingStop, async ({ conversationId }: { conversationId: string }) => {
       try {
         await assertConversationParticipant(user.id, conversationId);
-        socket.to(conversationRoom(conversationId)).emit(socketEvents.typingStop, {
+        const rooms = await conversationUserRooms(conversationId);
+        socket.to(rooms).emit(socketEvents.typingStop, {
           conversationId,
           userId: user.id
         });
