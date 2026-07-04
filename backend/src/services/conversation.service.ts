@@ -32,6 +32,22 @@ const conversationInclude = {
   },
 } satisfies Prisma.ConversationInclude;
 
+function conversationListInclude(userId: string) {
+  return {
+    ...conversationInclude,
+    _count: {
+      select: {
+        messages: {
+          where: {
+            senderId: { not: userId },
+            reads: { none: { userId } },
+          },
+        },
+      },
+    },
+  } satisfies Prisma.ConversationInclude;
+}
+
 export async function createPrivateConversation(
   currentUserId: string,
   participantId: string,
@@ -61,11 +77,11 @@ export async function createPrivateConversation(
   });
 
   if (existing) {
-    return existing;
+    return { ...existing, unreadCount: 0 };
   }
 
   try {
-    return await prisma.conversation.create({
+    const conversation = await prisma.conversation.create({
       data: {
         pairKey,
         participants: {
@@ -74,6 +90,7 @@ export async function createPrivateConversation(
       },
       include: conversationInclude,
     });
+    return { ...conversation, unreadCount: 0 };
   } catch (error) {
     // The unique key makes concurrent creates converge on the same conversation.
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
@@ -81,42 +98,56 @@ export async function createPrivateConversation(
         where: { pairKey },
         include: conversationInclude,
       });
-      if (conversation) return conversation;
+      if (conversation) return { ...conversation, unreadCount: 0 };
     }
     throw error;
   }
 }
 
 export async function listConversations(userId: string) {
-  return prisma.conversation.findMany({
+  const conversations = await prisma.conversation.findMany({
     where: {
       participants: {
         some: { userId }
       }
     },
-    include: conversationInclude,
+    include: conversationListInclude(userId),
     orderBy: { updatedAt: "desc" }
   });
+
+  return conversations.map(({ _count, ...conversation }) => ({
+    ...conversation,
+    unreadCount: _count.messages,
+  }));
 }
 
 export async function createMessage(userId: string, conversationId: string, content: string) {
   await assertConversationParticipant(userId, conversationId);
 
-  return prisma.message.create({
-    data: {
-      conversationId,
-      senderId: userId,
-      content
-    },
-    include: {
-      sender: {
-        select: {
-          id: true,
-          username: true
-        }
+  return prisma.$transaction(async (tx) => {
+    const message = await tx.message.create({
+      data: {
+        conversationId,
+        senderId: userId,
+        content
       },
-      reads: true
-    }
+      include: {
+        sender: {
+          select: {
+            id: true,
+            username: true
+          }
+        },
+        reads: true
+      }
+    });
+
+    await tx.conversation.update({
+      where: { id: conversationId },
+      data: { updatedAt: new Date() },
+    });
+
+    return message;
   });
 }
 

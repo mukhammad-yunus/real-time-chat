@@ -50,6 +50,7 @@ export type Conversation = {
   id: string;
   createdAt: string;
   updatedAt: string;
+  unreadCount: number;
   participants: Array<{ user: PublicUser }>;
   messages?: Array<Pick<Message, "id" | "content" | "createdAt" | "senderId">>;
 };

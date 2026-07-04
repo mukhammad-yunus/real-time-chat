@@ -22,13 +22,16 @@ export type ChatState = {
 export type ChatAction =
   | { type: "olderLoaded"; messages: Message[]; nextCursor: string | null }
   | { type: "messageReceived"; message: Message; clientMessageId?: string }
+  | { type: "conversationMessageReceived"; message: Message; currentUserId: string }
   | { type: "messageQueued"; message: PendingMessage }
   | { type: "messageFailed"; clientId: string }
   | { type: "delivered"; messageId: string; deliveredAt: string }
   | {
       type: "read";
+      conversationId: string;
       messageIds: string[];
       read: Pick<MessageRead, "userId" | "readAt">;
+      currentUserId: string;
     }
   | { type: "presence"; userId: string; isOnline: boolean; lastSeenAt?: string }
   | { type: "typing"; conversationId: string; username?: string }
@@ -57,13 +60,53 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         messages: [...action.messages, ...state.messages],
         nextCursor: action.nextCursor,
       };
-    case "messageReceived":
+    case "messageReceived": {
+      const preview = {
+        id: action.message.id,
+        content: action.message.content,
+        createdAt: action.message.createdAt,
+        senderId: action.message.senderId,
+      };
       return {
         ...state,
         messages: upsertMessage(state.messages, action.message, action.clientMessageId),
+        conversations: state.conversations.map((conversation) =>
+          conversation.id === action.message.conversationId
+            ? { ...conversation, messages: [preview] }
+            : conversation,
+        ),
       };
+    }
     case "messageQueued":
       return { ...state, messages: [...state.messages, action.message] };
+    case "conversationMessageReceived": {
+      const preview = {
+        id: action.message.id,
+        content: action.message.content,
+        createdAt: action.message.createdAt,
+        senderId: action.message.senderId,
+      };
+      const conversations = state.conversations.map((conversation) =>
+        conversation.id === action.message.conversationId
+          ? {
+              ...conversation,
+              messages: [preview],
+              unreadCount:
+                conversation.unreadCount +
+                Number(action.message.senderId !== action.currentUserId),
+            }
+          : conversation,
+      );
+      const updated = conversations.find(
+        (conversation) => conversation.id === action.message.conversationId,
+      );
+      return {
+        ...state,
+        conversations: updated
+          ? [updated, ...conversations.filter((conversation) => conversation !== updated)]
+          : conversations,
+      };
+    }
     case "messageFailed":
       return {
         ...state,
@@ -100,6 +143,18 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
                 ],
               }
             : item,
+        ),
+        conversations: state.conversations.map((conversation) =>
+          conversation.id === action.conversationId &&
+          action.read.userId === action.currentUserId
+            ? {
+                ...conversation,
+                unreadCount: Math.max(
+                  0,
+                  conversation.unreadCount - action.messageIds.length,
+                ),
+              }
+            : conversation,
         ),
       };
     case "presence":

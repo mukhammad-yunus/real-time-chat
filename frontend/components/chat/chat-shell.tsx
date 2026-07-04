@@ -61,6 +61,11 @@ export function ChatShell({
           });
         }
       } else {
+        dispatch({
+          type: "conversationMessageReceived",
+          message,
+          currentUserId: currentUser.id,
+        });
         router.refresh();
       }
     });
@@ -69,11 +74,13 @@ export function ChatShell({
       dispatch({ type: "delivered", messageId, deliveredAt });
     });
 
-    socket.on("message:read", ({ userId, messageIds, readAt }) => {
+    socket.on("message:read", ({ conversationId, userId, messageIds, readAt }) => {
       dispatch({
         type: "read",
+        conversationId,
         messageIds,
         read: { userId, readAt },
+        currentUserId: currentUser.id,
       });
     });
 

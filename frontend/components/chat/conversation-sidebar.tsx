@@ -62,6 +62,7 @@ export function ConversationSidebar({
               const latest = conversation.messages?.[0];
               const typingUsername = typingUsers[conversation.id];
               const active = conversation.id === activeConversationId;
+              const hasUnreadMessages = conversation.unreadCount > 0;
 
               return (
                 <li key={conversation.id}>
@@ -88,6 +89,16 @@ export function ConversationSidebar({
                         <span className="truncate font-semibold">
                           @{other?.username}
                         </span>
+                        {hasUnreadMessages ? (
+                          <span
+                            className="grid min-w-5 place-items-center rounded-full bg-mint-600 px-1.5 py-0.5 text-xs font-semibold text-white"
+                            aria-label={`${conversation.unreadCount} unread messages`}
+                          >
+                            {conversation.unreadCount > 99
+                              ? "99+"
+                              : conversation.unreadCount}
+                          </span>
+                        ) : null}
                         <span className="sr-only">
                           {online ? "Online" : "Offline"}
                         </span>
